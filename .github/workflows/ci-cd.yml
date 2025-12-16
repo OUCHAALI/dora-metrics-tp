@@ -15,7 +15,7 @@ jobs:
         run: echo "Build OK"
         
       - name: Test
-        run: echo "Tests OK"
+        run: exit 1   # <--- CHANGE THIS LINE
         
       - name: Deploy
         run: |
