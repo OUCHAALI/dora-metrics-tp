@@ -1,8 +1,827 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nexus | DeFi Portfolio Tracker</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #0a0e1a;
+            --bg-card: #151925;
+            --accent-primary: #00d4ff;
+            --accent-secondary: #7000ff;
+            --accent-tertiary: #ff006e;
+            --text-primary: #ffffff;
+            --text-secondary: #8b95b0;
+            --success: #00ff88;
+            --danger: #ff3366;
+            --glow: rgba(0, 212, 255, 0.4);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        @keyframes gradientShift {
+
+            0%,
+            100% {
+                background-position: 0% 50%;
+            }
+
+            50% {
+                background-position: 100% 50%;
+            }
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translateY(0px);
+            }
+
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.6;
+            }
+        }
+
+        @keyframes slideInLeft {
+            from {
+                transform: translateX(-30px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideInRight {
+            from {
+                transform: translateX(30px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                transform: translateY(20px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes neonGlow {
+
+            0%,
+            100% {
+                filter: drop-shadow(0 0 5px var(--accent-primary)) drop-shadow(0 0 15px var(--accent-primary));
+            }
+
+            50% {
+                filter: drop-shadow(0 0 10px var(--accent-primary)) drop-shadow(0 0 25px var(--accent-primary));
+            }
+        }
+
+        body {
+            background: linear-gradient(135deg, #0a0e1a 0%, #1a1530 50%, #0a0e1a 100%);
+            background-size: 200% 200%;
+            animation: gradientShift 15s ease infinite;
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 20% 50%, rgba(0, 212, 255, 0.05) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(112, 0, 255, 0.05) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 260px;
+            background: rgba(21, 25, 37, 0.8);
+            backdrop-filter: blur(20px);
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid rgba(0, 212, 255, 0.1);
+            position: fixed;
+            height: 100vh;
+            z-index: 100;
+            animation: slideInLeft 0.6s ease;
+        }
+
+        .sidebar::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 1px;
+            height: 100%;
+            background: linear-gradient(180deg, transparent, var(--accent-primary), transparent);
+            animation: pulse 3s ease-in-out infinite;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary), var(--accent-tertiary));
+            background-size: 200% 200%;
+            animation: gradientShift 3s ease infinite;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 3rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            filter: drop-shadow(0 0 20px rgba(0, 212, 255, 0.3));
+        }
+
+        .logo i {
+            animation: float 3s ease-in-out infinite;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 18px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            border-radius: 12px;
+            margin-bottom: 8px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .nav-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 0;
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-primary), transparent);
+            transition: width 0.3s ease;
+        }
+
+        .nav-item:hover::before,
+        .nav-item.active::before {
+            width: 100%;
+        }
+
+        .nav-item:hover,
+        .nav-item.active {
+            color: var(--accent-primary);
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.2);
+            transform: translateX(5px);
+        }
+
+        .nav-item i {
+            width: 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .nav-item span {
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: 260px;
+            flex: 1;
+            padding: 2rem;
+            max-width: 1600px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            animation: fadeInUp 0.6s ease;
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            animation: neonGlow 2s ease-in-out infinite;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .avatar:hover {
+            transform: scale(1.1) rotate(10deg);
+        }
+
+        /* Dashboard Grid */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        .card {
+            background: rgba(21, 25, 37, 0.6);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 28px;
+            border: 1px solid rgba(0, 212, 255, 0.1);
+            position: relative;
+            overflow: hidden;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            animation: fadeInUp 0.8s ease backwards;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(0, 212, 255, 0.05) 0%, transparent 70%);
+            opacity: 0;
+            transition: opacity 0.4s ease;
+        }
+
+        .card:hover {
+            border-color: var(--accent-primary);
+            box-shadow: 0 8px 32px rgba(0, 212, 255, 0.15);
+            transform: translateY(-5px);
+        }
+
+        .card:hover::before {
+            opacity: 1;
+        }
+
+        /* Stats Cards */
+        .stat-card {
+            grid-column: span 3;
+            animation-delay: calc(var(--card-index) * 0.1s);
+        }
+
+        .stat-card:nth-child(1) {
+            --card-index: 1;
+        }
+
+        .stat-card:nth-child(2) {
+            --card-index: 2;
+        }
+
+        .stat-card:nth-child(3) {
+            --card-index: 3;
+        }
+
+        .stat-card:nth-child(4) {
+            --card-index: 4;
+        }
+
+        .stat-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary), var(--accent-tertiary));
+            background-size: 200% 100%;
+            animation: gradientShift 3s ease infinite;
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, var(--text-primary), var(--accent-primary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .stat-change {
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 600;
+        }
+
+        .text-success {
+            color: var(--success);
+            text-shadow: 0 0 10px rgba(0, 255, 136, 0.3);
+        }
+
+        .text-danger {
+            color: var(--danger);
+            text-shadow: 0 0 10px rgba(255, 51, 102, 0.3);
+        }
+
+        /* Chart Section */
+        .chart-section {
+            grid-column: span 8;
+            height: 420px;
+            animation-delay: 0.5s;
+        }
+
+        .allocation-section {
+            grid-column: span 4;
+            height: 420px;
+            animation-delay: 0.6s;
+        }
+
+        /* Assets Table */
+        .assets-section {
+            grid-column: span 12;
+            animation-delay: 0.7s;
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            text-align: left;
+            padding: 18px;
+            color: var(--text-secondary);
+            font-weight: 600;
+            border-bottom: 1px solid rgba(0, 212, 255, 0.1);
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            letter-spacing: 1px;
+        }
+
+        td {
+            padding: 18px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            transition: background 0.3s ease;
+        }
+
+        tr:hover td {
+            background: rgba(0, 212, 255, 0.05);
+        }
+
+        .asset-info {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .asset-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        tr:hover .asset-icon {
+            transform: scale(1.1) rotate(5deg);
+            box-shadow: 0 0 20px currentColor;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border-radius: 10px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .btn:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            color: white;
+            box-shadow: 0 4px 15px rgba(0, 212, 255, 0.3);
+        }
+
+        .btn-primary:hover {
+            box-shadow: 0 6px 25px rgba(0, 212, 255, 0.5);
+            transform: translateY(-2px);
+        }
+
+        .btn span,
+        .btn i {
+            position: relative;
+            z-index: 1;
+        }
+
+        @media (max-width: 1024px) {
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+
+            .sidebar.active {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .stat-card {
+                grid-column: span 6;
+            }
+
+            .chart-section,
+            .allocation-section {
+                grid-column: span 12;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .stat-card {
+                grid-column: span 12;
+            }
+        }
+
+        /* Mobile Menu Toggle */
+        .menu-toggle {
+            display: none;
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 101;
+            background: rgba(0, 212, 255, 0.2);
+            border: 1px solid var(--accent-primary);
+            color: var(--accent-primary);
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+        }
+
+        @media (max-width: 1024px) {
+            .menu-toggle {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
 
 <body>
-    <h1>Hello DORA - Feature Branch!</h1>
+    <!-- Mobile Menu Toggle -->
+    <button class="menu-toggle" onclick="toggleSidebar()">
+        <i class="fas fa-bars"></i>
+    </button>
+
+    <!-- Sidebar -->
+    <nav class="sidebar" id="sidebar">
+        <div class="logo">
+            <i class="fas fa-cube"></i> NEXUS
+        </div>
+        <a href="#" class="nav-item active"><i class="fas fa-home"></i><span>Dashboard</span></a>
+        <a href="#" class="nav-item"><i class="fas fa-wallet"></i><span>Portfolio</span></a>
+        <a href="#" class="nav-item"><i class="fas fa-exchange-alt"></i><span>Swap</span></a>
+        <a href="#" class="nav-item"><i class="fas fa-chart-line"></i><span>Analytics</span></a>
+        <a href="#" class="nav-item"><i class="fas fa-cog"></i><span>Settings</span></a>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <header class="header">
+            <div>
+                <h1 style="font-size: 1.8rem; font-weight: 700;">Dashboard Overview</h1>
+                <p style="color: var(--text-secondary); margin-top: 4px;">Welcome back, Alex 👋</p>
+            </div>
+            <div class="user-profile">
+                <button class="btn btn-primary"><i class="fas fa-plus"></i> <span>Add Asset</span></button>
+                <div class="avatar"></div>
+            </div>
+        </header>
+
+        <div class="dashboard-grid">
+            <!-- Stats -->
+            <div class="card stat-card">
+                <div class="stat-label">Total Balance</div>
+                <div class="stat-value" id="totalBalance">$124,592.45</div>
+                <div class="stat-change text-success">
+                    <i class="fas fa-arrow-up"></i> +2.4% (24h)
+                </div>
+            </div>
+            <div class="card stat-card">
+                <div class="stat-label">Total Profit</div>
+                <div class="stat-value">$42,105.20</div>
+                <div class="stat-change text-success">
+                    <i class="fas fa-arrow-up"></i> +15.8% (All time)
+                </div>
+            </div>
+            <div class="card stat-card">
+                <div class="stat-label">Best Performer</div>
+                <div class="stat-value">Ethereum</div>
+                <div class="stat-change text-success">
+                    <i class="fas fa-arrow-up"></i> +5.2% (24h)
+                </div>
+            </div>
+            <div class="card stat-card">
+                <div class="stat-label">Gas Fees (Est.)</div>
+                <div class="stat-value" id="gasFees">$12.45</div>
+                <div class="stat-change" style="color: var(--text-secondary)">
+                    <i class="fas fa-gas-pump"></i> <span id="gasGwei">24</span> Gwei
+                </div>
+            </div>
+
+            <!-- Charts -->
+            <div class="card chart-section">
+                <h3 style="margin-bottom: 20px; font-size: 1.2rem;">Portfolio Performance</h3>
+                <canvas id="mainChart"></canvas>
+            </div>
+
+            <div class="card allocation-section">
+                <h3 style="margin-bottom: 20px; font-size: 1.2rem;">Asset Allocation</h3>
+                <canvas id="pieChart"></canvas>
+            </div>
+
+            <!-- Assets Table -->
+            <div class="card assets-section">
+                <h3 style="margin-bottom: 20px; font-size: 1.2rem;">Your Assets</h3>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Asset</th>
+                                <th>Price</th>
+                                <th>Balance</th>
+                                <th>Value</th>
+                                <th>24h Change</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="assetTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const assets = [
+            { name: 'Bitcoin', symbol: 'BTC', price: 64230.50, balance: 0.85, color: '#f7931a' },
+            { name: 'Ethereum', symbol: 'ETH', price: 3450.20, balance: 12.5, color: '#627eea' },
+            { name: 'Solana', symbol: 'SOL', price: 145.80, balance: 250, color: '#14f195' },
+            { name: 'Cardano', symbol: 'ADA', price: 0.45, balance: 15000, color: '#0033ad' },
+            { name: 'Polkadot', symbol: 'DOT', price: 7.20, balance: 500, color: '#e6007a' }
+        ];
+
+        let mainChart, pieChart;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initCharts();
+            renderTable();
+            startLiveUpdates();
+            initNavigation();
+        });
+
+        function initNavigation() {
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+                    item.classList.add('active');
+                });
+            });
+        }
+
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('active');
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('assetTableBody');
+            tbody.innerHTML = assets.map(asset => {
+                const value = asset.price * asset.balance;
+                const change = (Math.random() * 10 - 4).toFixed(2);
+                const isPositive = change >= 0;
+
+                return `
+                    <tr style="animation: fadeInUp 0.6s ease backwards">
+                        <td>
+                            <div class="asset-info">
+                                <div class="asset-icon" style="background: ${asset.color}25; color: ${asset.color}; box-shadow: 0 0 15px ${asset.color}40">
+                                    ${asset.symbol[0]}
+                                </div>
+                                <div>
+                                    <div style="font-weight: 600; font-size: 0.95rem">${asset.name}</div>
+                                    <div style="font-size: 0.8rem; color: var(--text-secondary)">${asset.symbol}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td style="font-weight: 500">$${asset.price.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                        <td style="color: var(--text-secondary)">${asset.balance.toLocaleString()} ${asset.symbol}</td>
+                        <td style="font-weight: 700; font-size: 1.05rem">$${value.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                        <td class="${isPositive ? 'text-success' : 'text-danger'}" style="font-weight: 600">
+                            ${isPositive ? '+' : ''}${change}%
+                        </td>
+                        <td>
+                            <button class="btn" style="background: rgba(0, 212, 255, 0.15); color: var(--accent-primary); border: 1px solid rgba(0, 212, 255, 0.3); padding: 8px 16px; font-size: 0.85rem">
+                                <span>Trade</span>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function initCharts() {
+            const ctx = document.getElementById('mainChart').getContext('2d');
+            mainChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                    datasets: [{
+                        label: 'Portfolio Value',
+                        data: [115000, 118000, 116500, 121000, 119500, 123000, 124592],
+                        borderColor: '#00d4ff',
+                        backgroundColor: 'rgba(0, 212, 255, 0.1)',
+                        tension: 0.4,
+                        fill: true,
+                        borderWidth: 3,
+                        pointRadius: 5,
+                        pointBackgroundColor: '#00d4ff',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        pointHoverRadius: 7
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(21, 25, 37, 0.95)',
+                            borderColor: '#00d4ff',
+                            borderWidth: 1,
+                            padding: 12,
+                            titleColor: '#00d4ff',
+                            bodyColor: '#fff'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            grid: { color: 'rgba(0, 212, 255, 0.05)' },
+                            ticks: { color: '#8b95b0', font: { size: 11 } }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: '#8b95b0', font: { size: 11 } }
+                        }
+                    }
+                }
+            });
+
+            const pieCtx = document.getElementById('pieChart').getContext('2d');
+            pieChart = new Chart(pieCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: assets.map(a => a.symbol),
+                    datasets: [{
+                        data: assets.map(a => a.price * a.balance),
+                        backgroundColor: assets.map(a => a.color),
+                        borderWidth: 0,
+                        hoverOffset: 10
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: {
+                                color: '#8b95b0',
+                                padding: 15,
+                                font: { size: 12 }
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(21, 25, 37, 0.95)',
+                            borderColor: '#00d4ff',
+                            borderWidth: 1,
+                            padding: 12
+                        }
+                    },
+                    cutout: '70%'
+                }
+            });
+        }
+
+        function startLiveUpdates() {
+            setInterval(() => {
+                let totalValue = 0;
+                assets.forEach(asset => {
+                    const change = (Math.random() - 0.5) * (asset.price * 0.002);
+                    asset.price += change;
+                    totalValue += asset.price * asset.balance;
+                });
+
+                document.getElementById('totalBalance').textContent =
+                    `$${totalValue.toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
+
+                const gasGwei = Math.floor(Math.random() * 20) + 15;
+                document.getElementById('gasGwei').textContent = gasGwei;
+                document.getElementById('gasFees').textContent = `$${(gasGwei * 0.52).toFixed(2)}`;
+
+                renderTable();
+
+                if (pieChart) {
+                    pieChart.data.datasets[0].data = assets.map(a => a.price * a.balance);
+                    pieChart.update('none');
+                }
+            }, 3000);
+        }
+    </script>
 </body>
 
 </html>
