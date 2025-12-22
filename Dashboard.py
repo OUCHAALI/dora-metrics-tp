@@ -8,7 +8,7 @@ import numpy as np
 
 # --- PAGE CONFIGURATION ---
 st.set_page_config(
-    page_title="DORA Intelligence Hub",
+    page_title="DORA Metrics Dashboard",
     page_icon="🚀",
     layout="wide",
     initial_sidebar_state="expanded"
